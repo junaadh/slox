@@ -1,13 +1,34 @@
-class Interpreter: Expr.Visitor {
-	func interpret(_ expr: Expr) throws {
-		let value = try evaluate(expr)
-		print(value)
+class Interpreter: Expr.Visitor, Stmt.Visitor {
+	func interpret(_ stmts: [Stmt]) throws {
+		for stmt in stmts {
+			try execute(stmt)
+		}
 	}
 
+	@discardableResult
 	private func evaluate(_ expr: Expr) throws -> Value {
 		return try expr.visit(self)
 	}
 
+	private func execute(_ stmt: Stmt) throws {
+		try stmt.visit(self)
+	}
+}
+
+extension Interpreter {
+	typealias S = Void
+
+	func visit_print(_ stmt: Stmt.Print) throws {
+		let value = try evaluate(stmt.expression)
+		print(value)
+	}
+
+	func visit_expression(_ stmt: Stmt.Expression) throws {
+		try evaluate(stmt.expression)
+	}
+}
+
+extension Interpreter {
 	typealias R = Value
 
 	func visit_literal(_ expr: Expr.Literal) throws -> Value {
@@ -62,7 +83,6 @@ class Interpreter: Expr.Visitor {
 			throw RuntimeError(expr.op, "Unsupported binary operands.")
 		}
 	}
-
 }
 
 struct RuntimeError: Error {

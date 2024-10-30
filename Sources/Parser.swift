@@ -9,8 +9,13 @@ class Parser {
 		self.ptr = slox
 	}
 
-	func parse() throws -> Expr {
-		return try expression()
+	func parse() throws -> [Stmt] {
+		var stmts: [Stmt] = []
+		while !is_eof {
+			stmts.append(try statement())
+		}
+
+		return stmts
 	}
 
 	private var next: Token {
@@ -147,7 +152,7 @@ extension Parser {
 		if match(.null) { return .literal(Expr.Literal(value: .null)) }
 
 		if match(.number(0), .string("")) {
-            return .literal(Expr.Literal(value: previous.get_value()!))
+			return .literal(Expr.Literal(value: previous.get_value()!))
 		}
 
 		if match(.leftParen) {
@@ -157,5 +162,27 @@ extension Parser {
 		}
 
 		throw error(next, "Expect expression.")
+	}
+}
+
+extension Parser {
+	private func statement() throws -> Stmt {
+		if match(.print) {
+			return try print_stmt()
+		}
+
+		return try expression_stmt()
+	}
+
+	private func expression_stmt() throws -> Stmt {
+		let expr = try expression()
+		try consume(.semicolon, "Expect ';' after a statement.")
+		return .expression(Stmt.Expression(expression: expr))
+	}
+
+	private func print_stmt() throws -> Stmt {
+		let value = try expression()
+		try consume(.semicolon, "Expect ';' after a statment.")
+		return .print(Stmt.Print(expression: value))
 	}
 }

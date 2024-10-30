@@ -46,13 +46,13 @@ class Slox {
 
         let parser = Parser(tokens: tokens, slox: self)
         do {
-            let expr = try parser.parse()
+            let stmts = try parser.parse()
 
             if hadError {
                 return
             }
 
-            try interpreter.interpret(expr)
+            try interpreter.interpret(stmts)
 
             // print(AstPrinter().print(expr))
         } catch let error as RuntimeError {

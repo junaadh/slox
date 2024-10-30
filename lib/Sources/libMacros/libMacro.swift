@@ -98,11 +98,84 @@ public struct DefineExprAstMacro: DeclarationMacro {
     }
 }
 
+public struct DefineStmtAstMacro: DeclarationMacro {
+    public static func expansion(
+        of node: some FreestandingMacroExpansionSyntax,
+        in context: some MacroExpansionContext
+    ) throws -> [DeclSyntax] {
+        let nodes = node.arguments.description
+        let parsed = parseASTNodes(from: nodes)
+
+        var defined: [String] = []
+
+        let struct_defs = DeclSyntax(
+            stringLiteral: parsed.map { node in
+                let name = node.0
+                defined.append(name)
+                let fields = node.1.map { val in
+                    return "let \(val.0): \(val.1)"
+                }.joined(separator: "\n")
+
+                return """
+                        public struct \(name) {
+                            \(fields)
+                        }
+
+                    """
+            }.joined(separator: "\n\n")
+        )
+
+        let protocol_decl = DeclSyntax(
+            stringLiteral: parsed.map { node in
+                let name = node.0
+                return "func visit_\(name.lowercased())(_ stmt: Stmt.\(name)) throws -> S"
+            }.joined(separator: "\n")
+        )
+
+        let visit_decl = DeclSyntax(
+            stringLiteral: parsed.map { node in
+                let name = node.0
+
+                return
+                    "case .\(name.lowercased())(let stmt): try visitor.visit_\(name.lowercased())(stmt)"
+            }.joined(separator: "\n")
+        )
+
+        let enum_cases = parsed.map { node in
+            "case \(node.0.lowercased())(\(node.0))"
+        }.joined(separator: "\n\t\t")
+        let enum_decl = DeclSyntax(
+            """
+                indirect enum Stmt {
+                    \(raw: enum_cases)
+
+                    protocol Visitor {
+                        associatedtype S
+
+                        \(protocol_decl)
+                    }
+
+                    func visit<V: Visitor>(_ visitor: V) throws -> V.S {
+                        switch self {
+                            \(visit_decl)
+                        }
+                    }
+                    
+                \(struct_defs)
+                }
+            """
+        )
+
+        return [enum_decl]
+    }
+}
+
 @main
 struct libPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         StringifyMacro.self,
         DefineExprAstMacro.self,
+        DefineStmtAstMacro.self,
     ]
 }
 

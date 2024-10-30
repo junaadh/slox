@@ -14,3 +14,7 @@ public macro stringify<T>(str value: T) -> (T, String) =
 @freestanding(declaration, names: named(Expr))
 public macro define_expr_ast(_ nodes: [(String, [(String, String)])]) =
 	#externalMacro(module: "libMacros", type: "DefineExprAstMacro")
+
+@freestanding(declaration, names: named(Stmt))
+public macro define_stmt_ast(_ nodes: [(String, [(String, String)])]) =
+	#externalMacro(module: "libMacros", type: "DefineStmtAstMacro")
