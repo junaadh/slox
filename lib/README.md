@@ -2,18 +2,18 @@
 
 ## exported macros
 - used to define expr
-"""swift
+```swift
   #define_expr_ast([
     ("Unary", [("op", "Token"), ("right", "Expr")]) 
   ])
-"""
+```
 
 - used to define stmt
-"""swift
+```swift
   #define_stmt_ast([
     ("Expression", [("expression", "Expr")]) 
   ])
-"""
+```
 
 ## macro exported items
 - define_/**/_ast exports Expr and Stmt globally
