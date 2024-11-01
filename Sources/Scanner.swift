@@ -10,8 +10,8 @@ class Scanner {
     init(source: String, _ ptr: Slox) {
         self.source = source
         self.source.append("\0")
-        self.start = source.unicodeScalars.startIndex
-        self.current = source.unicodeScalars.startIndex
+        self.start = self.source.unicodeScalars.startIndex
+        self.current = self.source.unicodeScalars.startIndex
         self.ptr = ptr
     }
 
@@ -54,11 +54,11 @@ class Scanner {
         case "<": add_token(make_token(match("=") ? .lessEqual : .less))
 
         case "\"": string()
-        // TODO: throw error token
         case _ where char.is_digit(): number()
         case _ where char.is_alpha(): identifier()
 
         case _ where char.is_whitespace(): return
+        // for good practice
         case "\0": add_token(make_token(.eof))
 
         default: ptr.error(line, "Unexpected character.")

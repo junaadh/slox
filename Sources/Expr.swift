@@ -1,12 +1,15 @@
 import lib
 
 #define_expr_ast([
+	("Assign", [("name", "Token"), ("value", "Expr")]),
 	("Binary", [("left", "Expr"), ("op", "Token"), ("right", "Expr")]),
 	("Grouping", [("expression", "Expr")]),
 	("Literal", [("value", "Value")]),
 	("Unary", [("op", "Token"), ("right", "Expr")]),
+	("Variable", [("name", "Token")]),
 ])
 
+/*
 class AstPrinter: Expr.Visitor {
 	func print(_ expr: Expr) -> String {
 		return try! expr.visit(self)
@@ -40,3 +43,4 @@ class AstPrinter: Expr.Visitor {
 		return try parenthesize(expr.op.token_type.description, expr.right)
 	}
 }
+*/

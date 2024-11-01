@@ -12,7 +12,10 @@ class Parser {
 	func parse() throws -> [Stmt] {
 		var stmts: [Stmt] = []
 		while !is_eof {
-			stmts.append(try statement())
+			guard let stmt = try declaration() else {
+				continue
+			}
+			stmts.append(stmt)
 		}
 
 		return stmts
@@ -57,6 +60,7 @@ class Parser {
 	private func consume(_ type: TokenType, _ msg: String) throws -> Token {
 		if check(type) { return advance() }
 
+		print(next, type)
 		throw error(next, msg)
 	}
 
@@ -85,7 +89,25 @@ class Parser {
 
 extension Parser {
 	private func expression() throws -> Expr {
-		return try equality()
+		return try assignment()
+	}
+
+	private func assignment() throws -> Expr {
+		let expr = try equality()
+
+		if match(.equal) {
+			let equal = previous
+			let value = try assignment()
+
+			if case let Expr.variable(ex) = expr {
+				let name = ex.name
+				return .assign(Expr.Assign(name: name, value: value))
+			}
+
+			throw error(equal, "Invalid assignment target.")
+		}
+
+		return expr
 	}
 
 	private func equality() throws -> Expr {
@@ -155,6 +177,10 @@ extension Parser {
 			return .literal(Expr.Literal(value: previous.get_value()!))
 		}
 
+		if match(.ident("")) {
+			return .variable(Expr.Variable(name: previous))
+		}
+
 		if match(.leftParen) {
 			let expr = try expression()
 			try consume(.rightParen, "Expect a ')' token after expression.")
@@ -166,9 +192,41 @@ extension Parser {
 }
 
 extension Parser {
+	private func declaration() throws -> Stmt? {
+		do {
+			if match(.var) {
+				return try var_declaration()
+			}
+			if match(.comment) {
+				return nil
+			}
+
+			return try statement()
+		} catch {
+			synchronize()
+			return nil
+		}
+	}
+
+	private func block() throws -> [Stmt] {
+		var statements: [Stmt] = []
+
+		while !check(.rightBrace) && !is_eof {
+			if let stmt = try declaration() {
+				statements.append(stmt)
+			}
+		}
+
+		try consume(.rightBrace, "Expected '}' after block.")
+		return statements
+	}
+
 	private func statement() throws -> Stmt {
 		if match(.print) {
 			return try print_stmt()
+		}
+		if match(.leftBrace) {
+			return Stmt.block(Stmt.Block(statements: try block()))
 		}
 
 		return try expression_stmt()
@@ -184,5 +242,17 @@ extension Parser {
 		let value = try expression()
 		try consume(.semicolon, "Expect ';' after a statment.")
 		return .print(Stmt.Print(expression: value))
+	}
+
+	private func var_declaration() throws -> Stmt {
+		let name = try consume(.ident(""), "Expect variable name")
+
+		var expr: Expr? = nil
+		if match(.equal) {
+			expr = try expression()
+		}
+
+		try consume(.semicolon, "Expect ';' after a statement.")
+		return .variable(Stmt.Variable(name: name, initializer: expr))
 	}
 }
